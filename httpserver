@@ -1,0 +1,58 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"io"
+	"net/http"
+	_ "net/http/pprof"
+	"runtime"
+
+	"github.com/golang/glog"
+)
+
+func main() {
+	//glog日志
+	flag.Set("v", "4")
+	glog.V(2).Info("Starting http server...")
+	//监听协议
+	http.HandleFunc("/", HelloWorldHandler)
+	http.HandleFunc("/user/login", UserLoginHandler)
+	http.HandleFunc("/healthz", healthz)
+	//监听服务错误处理
+	err := http.ListenAndServe("0.0.0.0:80", nil)
+	if err != nil {
+		fmt.Println("服务器错误")
+	}
+	fmt.Println(runtime.GOMAXPROCS(0))
+
+}
+
+func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
+	//控制台打印客户端访问信息
+	fmt.Println("r.Method = ", r.Method)
+	fmt.Println("r.URL = ", r.URL)
+	fmt.Println("r.Header = ", r.Header)
+	fmt.Println("r.Body = ", r.Body)
+	fmt.Fprintf(w, "HelloWorld!")
+	fmt.Println("entering root handler")
+	user := r.URL.Query().Get("user")
+	if user != "" {
+		io.WriteString(w, fmt.Sprintf("hello [%s]\n", user))
+	} else {
+		io.WriteString(w, "hello [stranger]\n")
+	}
+	io.WriteString(w, "===================Details of the http request header:============\n")
+	for k, v := range r.Header {
+		io.WriteString(w, fmt.Sprintf("%s=%s\n", k, v))
+	}
+
+}
+
+func healthz(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "200\n")
+}
+func UserLoginHandler(response http.ResponseWriter, request *http.Request) {
+	fmt.Println("Handler Hello")
+	fmt.Fprintf(response, "Login Success")
+}
